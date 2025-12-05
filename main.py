@@ -54,12 +54,14 @@ def cli():
 @cli.command()
 def register():
     """Create account"""
+    # Prompt for Name, Username, and Confirm Password
     name = click.prompt("Name")
     user = click.prompt("Username")
     pw = getpass.getpass("Master Password: ")
     if getpass.getpass("Confirm: ") != pw:
         click.echo("Mismatch."); return
 
+    # Generate a data encryption key
     dek = crypto.generate_dek()
     
     # Encrypt PII with temp session
@@ -72,33 +74,49 @@ def register():
     kek = crypto.derive_kek(pw, salt)
     encrypted_dek = crypto.encrypt_dek(dek, kek)
     
+    # Hash the username & password
     u_hash = crypto.get_blind_index(user)
     p_hash = crypto.hash_password(pw)
     
+    # Create a new account
     if db.create_user(enc_name, enc_user, u_hash, p_hash, encrypted_dek):
         click.echo("Account created.")
+    # Account already exists
     else:
         click.echo("Username taken.")
 
 @cli.command()
 def login():
+    # Prompt for username and master password
     user = click.prompt("Username")
     pw = getpass.getpass("Master Password: ")
     
+    # Hash the username
     u_hash = crypto.get_blind_index(user)
+    # Fetch the matching user hash
     row = db.fetch_user_by_hash(u_hash)
     
+    # No username hash matches -- OR no password hash matches
     if not row or not crypto.check_password(pw, row['password_hash']):
         click.echo("Invalid credentials."); return
 
     try:
+        # Generate salt using username
         salt = crypto.get_salt(user)
+        # Use password & salt to make Key Encryption Key
         kek = crypto.derive_kek(pw, salt)
+        # Use Key Encryption Key to generate Data Encryption Key
         dek = crypto.decrypt_dek(row['encrypted_dek'], kek)
+        # Create a new SafeSession with the DEK, stored safely in Memory
         session = crypto.SafeSession(dek)
+
+        # Delete the KEK, Password, and DEK
         del kek, pw, dek
         
+        # Update the context to use the user's login and session
         ctx = AppContext(row['id'], user, session)
+
+        # Direct to the main menu
         main_menu(ctx)
     except Exception as e:
         click.echo(f"Decryption failed: {e}")
@@ -111,10 +129,13 @@ def main_menu(ctx):
         opts = ["List all services", "View credentials", "Add credentials", 
                 "Edit credentials", "Delete credentials", "Search credentials", 
                 "Account settings", "Logout"]
-        
-        for i, o in enumerate(opts, 1): click.echo(f"{i}. {o}")
+        # Print each option in the menu
+        for i, o in opts: click.echo(f"{i + 1}. {o}")
+
+        # Prompt user for integer input
         c = click.prompt("Select", type=int, default=0)
         
+        # Menu options
         if c == 1: list_items(ctx)
         elif c == 2: interact_select(ctx, 'view')
         elif c == 3: add_item(ctx)
@@ -137,19 +158,27 @@ def decrypt_row(ctx, row):
 
 def list_items(ctx):
     rows = db.get_credentials(ctx.user_id)
-    if not rows: click.echo("Empty vault."); return
+    # There are no credentials
+    if not rows: 
+        click.echo("Empty vault.")
+        return
+    
     for r in rows:
-        d = decrypt_row(ctx, r)
-        click.echo(f"- {d['name'] or d['web']} (User: {d['user']}) {'[LOCKED]' if d['priv'] else ''}")
+        # Decrypt & list each credential
+        dec = decrypt_row(ctx, r)
+        click.echo(f"- {dec['name'] or dec['web']} (User: {dec['user']}) {'[LOCKED]' if dec['priv'] else ''}")
 
 def add_item(ctx):
+    # Prompt credential entry fields
     web = click.prompt("Website")
     name = click.prompt("Custom Name", default="", show_default=False)
     user = click.prompt("Username")
     pw = getpass.getpass("Password: ")
     priv = click.confirm("Private?", default=False)
     
+    # Add new credentials
     db.add_credential(ctx.user_id, 
+        # Encrypt the Website, Custom Name, Username, and Password
         crypto.encrypt_string(web, ctx.safe),
         crypto.encrypt_string(name, ctx.safe),
         crypto.encrypt_string(user, ctx.safe),
@@ -181,15 +210,21 @@ def interact_select(ctx, mode):
         click.echo("Multiple matches:")
         for i, match in matches: 
             click.echo(f"{i + 1}. {match['name'] or match['web']} ({match['user']})")
+        
         # Prompt user for input index
         idx = click.prompt("Choice", type=int) - 1
-        # Verify index is within bounds
-        if 0 <= idx < len(matches): target = matches[idx]
-        else: return
 
+        # Exit if the index is out of bounds
+        if 0 > idx >= len(matches): return
+
+        # Update the target value
+        target = matches[idx]
+        
     # Handle the display, editing, or deletion of the selected credentials
-    if mode == 'view': view_item(ctx, target)
-    elif mode == 'edit': edit_item(ctx, target)
+    if mode == 'view':
+        view_item(ctx, target)
+    elif mode == 'edit':
+        edit_item(ctx, target)
     elif mode == 'delete':
         # Make the user confirm they'd like to delete
         if click.confirm(f"Delete {target['name'] or target['web']}?"):
@@ -202,60 +237,72 @@ def search_credentials(ctx):
     click.echo("\n1. By website\n2. By custom name\n3. By username\n4. All fields")
     stype = click.prompt("Type", type=int)
     term = click.prompt("Search term").lower()
-    
+
+    # Get all user credentials (encrypted)
     rows = db.get_credentials(ctx.user_id)
     found = False
     
     click.echo("\nResults:")
     for r in rows:
-        d = decrypt_row(ctx, r)
+        # Decrypt the row content
+        dec = decrypt_row(ctx, r)
         match = False
         
         # Querying Website or Any, True if match found
-        match = True if (stype in (1, 4) and term in d['web'].lower()) else match
+        match = True if (stype in (1, 4) and term in dec['web'].lower()) else match
         # Querying Custom Name or Any, True if match found
-        match = True if (stype in (2, 4) and term in (d['name'] or "").lower()) else match
+        match = True if (stype in (2, 4) and term in (dec['name'] or "").lower()) else match
         # Querying Username or Any, True if match found
-        match = True if (stype in (3, 4) and term in d['user'].lower()) else match
+        match = True if (stype in (3, 4) and term in dec['user'].lower()) else match
         
         # Continue looping if no match
         if not match: continue
 
         # Display the match when found
-        click.echo(f"- {d['name'] or d['web']} (Web: {d['web']}, User: {d['user']})")
+        click.echo(f"- {dec['name'] or dec['web']} (Web: {dec['web']}, User: {dec['user']})")
         found = True
             
     if not found: click.echo("No results.")
 
 def view_item(ctx, item):
-    if item['priv']:
+    if item['priv']: # Credentials are private
         pw = getpass.getpass("Verify Master Password: ")
-        # Verify hash only
+        # Verify the password hash matches the entered value
+        # DOES NOT COMPARE WITH ORIGINAL PLAINTEXT PASSWORD
         row = db.fetch_user_by_hash(crypto.get_blind_index(ctx.username))
         if not crypto.check_password(pw, row['password_hash']):
             click.echo("Access Denied."); return
 
+    # Start with password hidden
     hidden = True
     while True:
-        clear()
+        # Prevent visible password from being saved in terminal history
+        clear() # Clear the screen betewen every keybind entry
+
+        # Print the viewing information for the credentials
         click.echo(f"=== {item['name'] or item['web']} ===")
         click.echo(f"Website: {item['web']}")
         click.echo(f"User:    {item['user']}")
         click.echo(f"Pass:    {'*' * 10 if hidden else item['pass']}")
         click.echo(f"\nKeys: [{ctx.reveal_key}] Reveal  [{ctx.hide_key}] Hide  [{ctx.exit_key}] Exit")
+        
+        # Listen to keybinds
         k = get_key()
         if k == ctx.reveal_key: hidden = False
         elif k == ctx.hide_key: hidden = True
         elif k == ctx.exit_key or k == 'esc': break
 
 def edit_item(ctx, item):
+    # Prompt for new credentials entry
     web = click.prompt("Website", default=item['web'])
     name = click.prompt("Name", default=item['name'] or "", show_default=False)
     user = click.prompt("User", default=item['user'])
     pw = getpass.getpass("New Pass (Enter to keep): ") or item['pass']
     priv = click.confirm("Private?", default=bool(item['priv']))
     
+    # Update the entered credentials
     db.update_credential(item['id'],
+        # Encrypt the website, custom name, username, and password
         crypto.encrypt_string(web, ctx.safe),
         crypto.encrypt_string(name, ctx.safe),
         crypto.encrypt_string(user, ctx.safe),
@@ -268,7 +315,7 @@ def settings(ctx):
     click.echo("\n1. Change Username\n2. Change Password\n3. Customize Keybindings\n4. Delete Account\n5. Back")
     c = click.prompt("Choice", type=int)
 
-    if c == 1:
+    if c == 1: # New Username
         new_user = click.prompt("New username")
         # To change username, we just re-encrypt the name field (since we don't use salt for DEK anymore)
         # But we DO change the salt used for the KEK (Password wrapper).
@@ -308,7 +355,7 @@ def settings(ctx):
                     click.echo("Username taken.")
                 conn.close()
 
-    elif c == 2:
+    elif c == 2: # New Password
         new_pw = getpass.getpass("New Password: ")
         if getpass.getpass("Confirm: ") != new_pw: return
         
@@ -321,7 +368,7 @@ def settings(ctx):
             db.update_password_and_key(ctx.user_id, crypto.hash_password(new_pw), new_enc_dek)
             click.echo("Password changed (Database Key re-wrapped).")
 
-    elif c == 3:
+    elif c == 3: # Update keybinds
         click.echo(f"Current: Reveal[{ctx.reveal_key}] Hide[{ctx.hide_key}] Exit[{ctx.exit_key}]")
         r = click.prompt("New Reveal key", default=ctx.reveal_key)
         h = click.prompt("New Hide key", default=ctx.hide_key)
@@ -331,6 +378,7 @@ def settings(ctx):
         ctx.refresh_keys()
         click.echo("Keybindings updated.")
 
+    # Delete Account
     elif c == 4 and click.confirm("Delete Account? This cannot be undone."):
         db.delete_user(ctx.user_id)
         click.echo("Deleted.")
