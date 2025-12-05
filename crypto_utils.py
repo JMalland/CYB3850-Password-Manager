@@ -9,6 +9,8 @@ from contextlib import contextmanager
 
 # --- Core Crypto Primitives ---
 
+# TODO: Improve salt determination to be additionally random
+# Not great practice to use username in salting each time.
 def get_salt(username: str) -> bytes:
     """Deterministic salt for user (16 bytes)"""
     return username.encode().ljust(16, b'0')[:16]
