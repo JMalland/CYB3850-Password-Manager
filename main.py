@@ -53,6 +53,7 @@ def cli():
 
 @cli.command()
 def register():
+    clear()
     """Create account"""
     # Prompt for Name, Username, and Confirm Password
     name = click.prompt("Name")
@@ -89,6 +90,7 @@ def register():
 
 @cli.command()
 def login():
+    clear()
     # Prompt for username and master password
     user = click.prompt("Username")
     pw = getpass.getpass("Master Password: ")
