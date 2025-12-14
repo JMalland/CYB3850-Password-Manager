@@ -85,6 +85,8 @@ def register():
     else:
         click.echo("Username taken.")
 
+    clear()
+
 @cli.command()
 def login():
     # Prompt for username and master password
@@ -117,6 +119,7 @@ def login():
         ctx = AppContext(row['id'], user, session)
 
         # Direct to the main menu
+        clear()
         main_menu(ctx)
     except Exception as e:
         click.echo(f"Decryption failed: {e}")
@@ -146,20 +149,28 @@ def main_menu(ctx):
         c = click.prompt("Select an option (1-8)", type=click.IntRange(1, 8))
 
         if c == 1:
+            clear()
             list_items(ctx)
         elif c == 2:
+            clear()
             interact_select(ctx, 'view')
         elif c == 3:
+            clear()
             add_item(ctx)
         elif c == 4:
+            clear()
             interact_select(ctx, 'edit')
         elif c == 5:
+            clear()
             interact_select(ctx, 'delete')
         elif c == 6:
+            clear()
             search_credentials(ctx)
         elif c == 7:
+            clear()
             settings(ctx)
         elif c == 8:
+            clear()
             click.echo("Logged out.")
             break
 
