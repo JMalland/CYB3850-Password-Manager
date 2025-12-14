@@ -308,7 +308,9 @@ def view_item(ctx, item):
         k = get_key()
         if k == ctx.reveal_key: hidden = False
         elif k == ctx.hide_key: hidden = True
-        elif k == ctx.exit_key or k == 'esc': break
+        elif k == ctx.exit_key or k == 'esc': 
+            clear()
+            break
 
 def edit_item(ctx, item):
     # Prompt for new credentials entry
