@@ -130,7 +130,7 @@ def main_menu(ctx):
                 "Edit credentials", "Delete credentials", "Search credentials", 
                 "Account settings", "Logout"]
         # Print each option in the menu
-        for i, o in opts: click.echo(f"{i + 1}. {o}")
+        for i, o in enumerate(opts, start=1): click.echo(f"{i + 1}. {o}")
 
         # Prompt user for integer input
         c = click.prompt("Select", type=int, default=0)
