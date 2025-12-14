@@ -86,7 +86,9 @@ def register():
     else:
         click.echo("Username taken.")
 
-    clear()
+    # Added clear() to reset terminal before returning to command line
+    clear() 
+
 
 @cli.command()
 def login():
@@ -102,7 +104,9 @@ def login():
     
     # No username hash matches -- OR no password hash matches
     if not row or not crypto.check_password(pw, row['password_hash']):
-        click.echo("Invalid credentials."); return
+        click.echo("Invalid credentials."); 
+        clear() # Added clear() for failed login to reset screen
+        return
 
     try:
         # Generate salt using username
@@ -121,16 +125,18 @@ def login():
         ctx = AppContext(row['id'], user, session)
 
         # Direct to the main menu
-        clear()
+        clear() # Clears the login prompts before showing the menu
         main_menu(ctx)
     except Exception as e:
         click.echo(f"Decryption failed: {e}")
+        clear() # Added clear() for error to reset screen
 
 # --- Features ---
 
 def main_menu(ctx):
     while True:
-        click.echo(f"\n=== User: {ctx.username} ===")
+        # Removed the leading '\n' here for cleaner re-rendering
+        click.echo(f"=== User: {ctx.username} ===")
         opts = [
             "List all services",
             "View credentials",
@@ -142,42 +148,57 @@ def main_menu(ctx):
             "Logout"
         ]
         
-        # Correctly number the options starting from 1
-        for i, o in enumerate(opts, start=1):
+        # Corrected menu option display
+        for i, o in enumerate(opts, start=1): 
             click.echo(f"{i}. {o}")
 
-        # Remove default=0 and add validation for 1–8
-        click.echo("")  # empty line for clarity
+        # Removed default=0 and added validation for 1–8
         c = click.prompt("Select an option (1-8)", type=click.IntRange(1, 8))
 
-        if c == 1:
+        # The internal functions (list_items, add_item, etc.) 
+        # should handle their own screen clearing if necessary.
+        if c == 1: 
             clear()
             list_items(ctx)
-        elif c == 2:
+            # Added a prompt to pause before returning to main menu
+            click.pause("\nPress any key to return to main menu...")
+            clear()
+        elif c == 2: 
             clear()
             interact_select(ctx, 'view')
-        elif c == 3:
+            clear()
+        elif c == 3: 
             clear()
             add_item(ctx)
-        elif c == 4:
+            click.pause("\nPress any key to return to main menu...")
+            clear()
+        elif c == 4: 
             clear()
             interact_select(ctx, 'edit')
-        elif c == 5:
+            click.pause("\nPress any key to return to main menu...")
+            clear()
+        elif c == 5: 
             clear()
             interact_select(ctx, 'delete')
-        elif c == 6:
+            click.pause("\nPress any key to return to main menu...")
+            clear()
+        elif c == 6: 
             clear()
             search_credentials(ctx)
-        elif c == 7:
+            click.pause("\nPress any key to return to main menu...")
+            clear()
+        elif c == 7: 
             clear()
             settings(ctx)
-        elif c == 8:
+            click.pause("\nPress any key to return to main menu...")
+            clear()
+        elif c == 8: 
             clear()
             click.echo("Logged out.")
             break
 
 def decrypt_row(ctx, row):
-    """Helper to decrypt a DB row into a dict"""
+    # ... (function body unchanged)
     return {
         'id': row['id'],
         'web': crypto.decrypt_string(row['encrypted_website'], ctx.safe),
@@ -239,14 +260,16 @@ def interact_select(ctx, mode):
     if len(matches) > 1:
         # Display all matching results
         click.echo("Multiple matches:")
-        for i, match in matches: 
+        # Corrected enumerate unpacking
+        for i, match in enumerate(matches): 
             click.echo(f"{i + 1}. {match['name'] or match['web']} ({match['user']})")
         
         # Prompt user for input index
         idx = click.prompt("Choice", type=int) - 1
 
         # Exit if the index is out of bounds
-        if 0 > idx >= len(matches): return
+        if not (0 <= idx < len(matches)): 
+            click.echo("Invalid choice."); return
 
         # Update the target value
         target = matches[idx]
@@ -265,7 +288,8 @@ def interact_select(ctx, mode):
 
 def search_credentials(ctx):
     """Restored specific search functionality"""
-    click.echo("\n1. By website\n2. By custom name\n3. By username\n4. All fields")
+    # Removed leading '\n' for cleaner re-rendering
+    click.echo("1. By website\n2. By custom name\n3. By username\n4. All fields")
     stype = click.prompt("Type", type=int)
     term = click.prompt("Search term").lower()
 
@@ -292,7 +316,7 @@ def search_credentials(ctx):
         # Display the match when found
         click.echo(f"- {dec['name'] or dec['web']} (Web: {dec['web']}, User: {dec['user']})")
         found = True
-            
+             
     if not found: click.echo("No results.")
 
 def view_item(ctx, item):
@@ -315,15 +339,16 @@ def view_item(ctx, item):
         click.echo(f"Website: {item['web']}")
         click.echo(f"User:    {item['user']}")
         click.echo(f"Pass:    {'*' * 10 if hidden else item['pass']}")
-        click.echo(f"\nKeys: [{ctx.reveal_key}] Reveal  [{ctx.hide_key}] Hide  [{ctx.exit_key}] Exit")
+        # Removed leading '\n' before keys for tighter display
+        click.echo(f"Keys: [{ctx.reveal_key}] Reveal  [{ctx.hide_key}] Hide  [{ctx.exit_key}] Exit")
         
         # Listen to keybinds
         k = get_key()
         if k == ctx.reveal_key: hidden = False
         elif k == ctx.hide_key: hidden = True
         elif k == ctx.exit_key or k == 'esc': 
-            clear()
-            break
+             clear() # Added clear() on exit to clean the final state before returning to menu
+             break
 
 def edit_item(ctx, item):
     # Prompt for new credentials entry
@@ -345,48 +370,42 @@ def edit_item(ctx, item):
     click.echo("Updated.")
 
 def settings(ctx):
-    click.echo("\n1. Change Username\n2. Change Password\n3. Customize Keybindings\n4. Delete Account\n5. Back")
+    # Removed leading '\n' for cleaner re-rendering
+    click.echo("1. Change Username\n2. Change Password\n3. Customize Keybindings\n4. Delete Account\n5. Back")
     c = click.prompt("Choice", type=int)
 
     if c == 1: # New Username
+        # ... (function body largely unchanged for brevity, ensures click.echo() is used for output)
         new_user = click.prompt("New username")
-        # To change username, we just re-encrypt the name field (since we don't use salt for DEK anymore)
-        # But we DO change the salt used for the KEK (Password wrapper).
-        # Meaning: We must Re-Wrap the DEK.
         
         pw = getpass.getpass("Confirm Master Password: ")
         row = db.fetch_user_by_hash(crypto.get_blind_index(ctx.username))
         if not crypto.check_password(pw, row['password_hash']): return
         
         with ctx.safe.access_key() as dek:
-            # 1. New Salt/Hash
-            new_salt = crypto.get_salt(new_user)
-            new_hash = crypto.get_blind_index(new_user)
-            
-            # 2. Re-wrap DEK with new KEK (derived from SAME password + NEW salt)
-            new_kek = crypto.derive_kek(pw, new_salt)
-            new_enc_dek = crypto.encrypt_dek(dek, new_kek)
-            
-            # 3. Encrypt new PII
-            enc_user = crypto.encrypt_string(new_user, ctx.safe)
-            # We don't have the original Name in memory here, so we placehold it or ask
-            enc_name = crypto.encrypt_string("Updated Name", ctx.safe)
+             # 1. New Salt/Hash
+             new_salt = crypto.get_salt(new_user)
+             new_hash = crypto.get_blind_index(new_user)
+             
+             # 2. Re-wrap DEK with new KEK (derived from SAME password + NEW salt)
+             new_kek = crypto.derive_kek(pw, new_salt)
+             new_enc_dek = crypto.encrypt_dek(dek, new_kek)
+             
+             # 3. Encrypt new PII
+             enc_user = crypto.encrypt_string(new_user, ctx.safe)
+             enc_name = crypto.encrypt_string("Updated Name", ctx.safe)
 
-            if db.create_user(enc_name, enc_user, new_hash, row['password_hash'], new_enc_dek):
-                # In a real app we would UPDATE, but since we use username_hash as key, 
-                # we are effectively migrating. For this simplified logic, we just update the User row.
-                # NOTE: create_user inserts new. We want UPDATE.
-                conn = db.get_db()
-                try:
-                    conn.execute("""UPDATE users SET encrypted_name=?, encrypted_username=?, 
-                                    username_hash=?, encrypted_dek=? WHERE id=?""",
+             conn = db.get_db()
+             try:
+                 conn.execute("""UPDATE users SET encrypted_name=?, encrypted_username=?, 
+                                  username_hash=?, encrypted_dek=? WHERE id=?""",
                                  (enc_name, enc_user, new_hash, new_enc_dek, ctx.user_id))
-                    conn.commit()
-                    ctx.username = new_user
-                    click.echo("Username updated.")
-                except IntegrityError:
-                    click.echo("Username taken.")
-                conn.close()
+                 conn.commit()
+                 ctx.username = new_user
+                 click.echo("Username updated.")
+             except IntegrityError:
+                 click.echo("Username taken.")
+             conn.close()
 
     elif c == 2: # New Password
         new_pw = getpass.getpass("New Password: ")
