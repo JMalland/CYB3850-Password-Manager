@@ -126,24 +126,42 @@ def login():
 def main_menu(ctx):
     while True:
         click.echo(f"\n=== User: {ctx.username} ===")
-        opts = ["List all services", "View credentials", "Add credentials", 
-                "Edit credentials", "Delete credentials", "Search credentials", 
-                "Account settings", "Logout"]
-        # Print each option in the menu
-        for i, o in enumerate(opts, start=1): click.echo(f"{i + 1}. {o}")
-
-        # Prompt user for integer input
-        c = click.prompt("Select", type=int, default=0)
+        opts = [
+            "List all services",
+            "View credentials",
+            "Add credentials",
+            "Edit credentials",
+            "Delete credentials",
+            "Search credentials",
+            "Account settings",
+            "Logout"
+        ]
         
-        # Menu options
-        if c == 1: list_items(ctx)
-        elif c == 2: interact_select(ctx, 'view')
-        elif c == 3: add_item(ctx)
-        elif c == 4: interact_select(ctx, 'edit')
-        elif c == 5: interact_select(ctx, 'delete')
-        elif c == 6: search_credentials(ctx)
-        elif c == 7: settings(ctx)
-        elif c == 8: break
+        # Correctly number the options starting from 1
+        for i, o in enumerate(opts, start=1):
+            click.echo(f"{i}. {o}")
+
+        # Remove default=0 and add validation for 1–8
+        click.echo("")  # empty line for clarity
+        c = click.prompt("Select an option (1-8)", type=click.IntRange(1, 8))
+
+        if c == 1:
+            list_items(ctx)
+        elif c == 2:
+            interact_select(ctx, 'view')
+        elif c == 3:
+            add_item(ctx)
+        elif c == 4:
+            interact_select(ctx, 'edit')
+        elif c == 5:
+            interact_select(ctx, 'delete')
+        elif c == 6:
+            search_credentials(ctx)
+        elif c == 7:
+            settings(ctx)
+        elif c == 8:
+            click.echo("Logged out.")
+            break
 
 def decrypt_row(ctx, row):
     """Helper to decrypt a DB row into a dict"""
