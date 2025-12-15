@@ -1,3 +1,4 @@
+import time
 from sqlite3 import IntegrityError
 import click
 import getpass
@@ -104,7 +105,8 @@ def login():
     
     # No username hash matches -- OR no password hash matches
     if not row or not crypto.check_password(pw, row['password_hash']):
-        click.echo("Invalid credentials."); 
+        click.echo("Invalid credentials.")
+        time.sleep(2)
         clear() # Added clear() for failed login to reset screen
         return
 
@@ -192,9 +194,10 @@ def main_menu(ctx):
             settings(ctx)
             click.pause("\nPress any key to return to main menu...")
             clear()
-        elif c == 8: 
+        elif c == 8:
             clear()
             click.echo("Logged out.")
+            time.sleep(1)
             break
 
 def decrypt_row(ctx, row):
