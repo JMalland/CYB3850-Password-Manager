@@ -102,23 +102,42 @@ Upon reaching the password re-entry, you may choose to keep the old password by 
 [5. DELETE CREDENTIALS]
 ___________________________________________________________________
 
+Here, you will simply be prompted for the name of the service you wish to delete. Upon entering [y] when prompted, the entry for the selected service will be deleted.
 
 
 
 [6. SEARCH CREDENTIALS]
 ___________________________________________________________________
 
+Here, you will be given four methods to search for credentials by:
+-----------------
+1. By website
+2. By custom name
+3. By username
+4. All fields
+-----------------
 
+Upon searching using one of the options, all matching results will be provided; each will adhere to the following format:
+- [CUSTOM NAME] (Web: [WEBSITE NAME], User: [USERNAME])
 
 
 [7. ACCOUNT SETTINGS]
 ___________________________________________________________________
 
+Here, you may edit information about your password manager account. The following options are given:
+-----------------
+1. Change Username
+2. Change Password
+3. Customize Keybindings
+4. Delete Account
+5. Back
+-----------------
 
+For customize keybindings, you may change the keybindings for reveal, hide, and exit when viewing credentials. By default, reveal is [v], hide is [h], and exit is [esc].
 
 
 [8. LOGOUT]
 ___________________________________________________________________
 
-
+This option simply logs you out of your master account.
 
