@@ -41,7 +41,7 @@ class AppContext:
     def __init__(self, user_id, username, safe_session):
         self.user_id = user_id
         self.username = username
-        self.safe = safe_session 
+        self.safe = safe_session
         self.refresh_keys()
 
     def refresh_keys(self):
@@ -83,9 +83,11 @@ def register():
     # Create a new account
     if db.create_user(enc_name, enc_user, u_hash, p_hash, encrypted_dek):
         click.echo("Account created.")
+        time.sleep(2)
     # Account already exists
     else:
         click.echo("Username taken.")
+        time.sleep(2)
 
     # Added clear() to reset terminal before returning to command line
     clear() 
