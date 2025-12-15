@@ -63,13 +63,15 @@ Simply enter a number 1-8 corresponding with whichever option you desire.
 [1. LIST ALL SERVICES]
 ___________________________________________________________________
 
-
+This will list all services that there exists credentials for, using their custom name. Usernames for the credentials are included next to the service's custom name. Private credentials will display [LOCKED] next to them.
 
 
 [2. VIEW CREDENTIALS]
 ___________________________________________________________________
 
+Here, you will enter a service's custom name or website name. If there are multiple matches for your search query, each appropriate result will be displayed. Private credentials will require that you type in your master password to view.
 
+Upon viewing the selected credentials, you may press [v] to reveal the password, [h] to hide it, and [esc] to head back to the main option screen.
 
 
 [3. ADD CREDENTIALS]
@@ -90,7 +92,11 @@ The website field is simply the name of the website. The custom name field allow
 [4. EDIT CREDENTIALS]
 ___________________________________________________________________
 
+Here, you will select the credentials you wish to edit by searching for its name. Upon selecting the desired credentials, you will then be asked to re-enter the credential information, where you may enter the new information instead.
 
+For each segment of the login, the old information will be enclosed in square brackets (example: Website [OldName]: <enter new name>)
+
+Upon reaching the password re-entry, you may choose to keep the old password by pressing enter. You may also re-configure its private status.
 
 
 [5. DELETE CREDENTIALS]
